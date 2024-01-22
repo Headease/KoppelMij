@@ -1,25 +1,63 @@
 @startuml
 actor "Client" as client
-actor "PGO" as pgo
-actor "Module Provider" as module
-actor "Auth Service" as auth
-actor "Idp (DVA)" as idp
-actor "FHIR service" as fhir_service
+participant "PGO" as pgo
+participant "Module Provider" as module
+boundary "Auth Service" as auth
+control "Idp (DVA)" as idp
+participant "FHIR service" as fhir_service
 
+== start module ==
+pgo -> client: "302 /authorize"
+client -> idp: GET /authorize
+idp -> idp: login or validate sso credentials
+idp -> client: 302 auth/callback?code=x
+client -> pgo: GET auth/callback?code=x
+pgo -> idp: POST idp/token (code, client auth)
+idp --> pgo: id_token, access_token
+pgo -> fhir_service: GET /fhir/ActivityDefinition
+fhir_service --> pgo
+pgo -> client: show activity definition(s)
+client -> pgo: select activity definition (ActivityDefinition)
+pgo -> fhir_service: POST /fhir/Task (instantiates=ActivityDefinition)
+fhir_service --> pgo: Task
+
+== launch ==
+pgo -> pgo: Create HTI token (Patient, Task, ActivityDefinition)
 pgo -> module: launch (HTI token)
+group SMART on FHIR
 module -> client: "302 /authorize?launch=<HTI token>"
-client -> auth: GET /authorize
+client -> auth: GET /authorize?launch=<HTI token>"
+group OpenID Connect
 auth -> client: "302 /authorize"
 client -> idp: GET /authorize
 idp -> idp: login or validate sso credentials
-idp -> client: 302 auth/callback
-client -> auth: GET auth/callback
+idp -> client: 302 auth/callback?code=y
+client -> auth: GET auth/callback?code=y
+auth -> idp: POST idp/token (code, client auth)
+idp --> auth: id_token, access_token
+end
 auth -> auth: validate user with HTI context
-auth -> client: 302 module/callback?code=x
-client -> module: GET module/callback?code=x
+auth -> client: 302 module/callback?code=z
+client -> module: GET module/callback?code=z
 module -> auth: POST /token (code, client auth)
-auth --> module: access_token
+auth --> module: id_token, access_token
+end
+
+== update resources ==
+
 module -> fhir_service: GET /fhir/Task/1234 (access_token)
 fhir_service --> module: FHIR task
+
+== views tasks ==
+pgo -> client: "302 /authorize"
+client -> idp: GET /authorize
+idp -> idp: login or validate sso credentials
+idp -> client: 302 auth/callback?code=x
+client -> pgo: GET auth/callback?code=x
+pgo -> idp: POST idp/token (code, client auth)
+idp --> pgo: id_token, access_token
+pgo -> fhir_service: GET /fhir/Task
+fhir_service --> pgo: Task(s)
+pgo -> client: show task(s)
 
 @enduml
