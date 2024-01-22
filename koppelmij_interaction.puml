@@ -9,7 +9,12 @@ participant "FHIR service" as fhir_service
 == start module ==
 pgo -> client: "302 /authorize"
 client -> idp: GET /authorize
-idp -> idp: login or validate sso credentials
+idp -> idp: login
+note left 
+   An active session cookie on 
+   the SSO endpoint could be used 
+   to achieve Single Sign On (SSO)
+end note
 idp -> client: 302 auth/callback?code=x
 client -> pgo: GET auth/callback?code=x
 pgo -> idp: POST idp/token (code, client auth)
@@ -30,7 +35,12 @@ client -> auth: GET /authorize?launch=<HTI token>"
 group OpenID Connect
 auth -> client: "302 /authorize"
 client -> idp: GET /authorize
-idp -> idp: login or validate sso credentials
+idp -> idp: login or validate\nsso credentials 
+note left 
+   An active session cookie on 
+   the SSO endpoint could be used 
+   to achieve Single Sign On (SSO)
+end note
 idp -> client: 302 auth/callback?code=y
 client -> auth: GET auth/callback?code=y
 auth -> idp: POST idp/token (code, client auth)
@@ -51,7 +61,12 @@ fhir_service --> module: FHIR task
 == views tasks ==
 pgo -> client: "302 /authorize"
 client -> idp: GET /authorize
-idp -> idp: login or validate sso credentials
+idp -> idp: login or validate\n sso credentials
+note left 
+   An active session cookie on 
+   the SSO endpoint could be used 
+   to achieve Single Sign On (SSO)
+end note
 idp -> client: 302 auth/callback?code=x
 client -> pgo: GET auth/callback?code=x
 pgo -> idp: POST idp/token (code, client auth)
