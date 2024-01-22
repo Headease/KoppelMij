@@ -1,0 +1,25 @@
+@startuml
+actor "Client" as client
+actor "PGO" as pgo
+actor "Module Provider" as module
+actor "Auth Service" as auth
+actor "Idp (DVA)" as idp
+actor "FHIR service" as fhir_service
+
+pgo -> module: launch (HTI token)
+module -> client: "302 /authorize?launch=<HTI token>"
+client -> auth: GET /authorize
+auth -> client: "302 /authorize"
+client -> idp: GET /authorize
+idp -> idp: login or validate sso credentials
+idp -> client: 302 auth/callback
+client -> auth: GET auth/callback
+auth -> auth: validate user with HTI context
+auth -> client: 302 module/callback?code=x
+client -> module: GET module/callback?code=x
+module -> auth: POST /token (code, client auth)
+auth --> module: access_token
+module -> fhir_service: GET /fhir/Task/1234 (access_token)
+fhir_service --> module: FHIR task
+
+@enduml
